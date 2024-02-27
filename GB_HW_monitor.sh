@@ -1,6 +1,6 @@
 #!/bin/bash
 Today=$(date +%Y%m%d)
-LogDir=/root/log
+LogDir=/var/log/ipmi
 LogFile=${LogDir}/${Today}_`hostname`.log
 expire_days=7
 
