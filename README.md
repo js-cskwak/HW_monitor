@@ -10,17 +10,11 @@ Gigabyte G293-S41 기준으로 작성 됨.
 GB_HW_monitor.service 파일은 /etc/systemd/system/ 디렉토리 밑에 copy 할것. 
 (아래와 같인 systemctl 운영 가능 하도록 설정 함)
 
-[root@SVC system]# systemctl status GB_HW_monitor.service
-● GB_HW_monitor.service - GB_HW_Monitor
-   Loaded: loaded (/etc/systemd/system/GB_HW_monitor.service; enabled; vendor preset: disabled)
-   Active: active (running) since Tue 2024-02-27 17:57:42 KST; 4h 49min left
-   Main PID: 1525 (GB_HW_monitor.s)
-    Tasks: 2 (limit: 306119)
-   Memory: 11.6M
-   CGroup: /system.slice/GB_HW_monitor.service
-           ├─ 1525 /bin/bash /root/GB_HW_monitor.sh
-           └─24258 sleep 10
-           
-Feb 27 17:57:42 SVC systemd[1]: Started GB_HW_Monitor.
+프로그램 시작
+[root@SVC system]# systemctl start GB_HW_monitor.service
+[root@SVC system]# 
+
+프로그램 종료
+[root@SVC system]# systemctl stop GB_HW_monitor.service
 [root@SVC system]# 
 
