@@ -1,0 +1,10 @@
+#!/bin/bash
+
+[Unit]
+Description=GB_HW_Monitor
+
+[Service]
+ExecStart=/root/HW_monitor/GB_HW_monitor.sh
+
+[Install]
+WantedBy=multi-user.target
