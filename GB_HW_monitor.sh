@@ -1,146 +1,148 @@
 #!/bin/bash
+source /root/HW_monitor/config
+
+declare -A levels=([INFO]=0 [WARN]=1 [ERRO]=2)
+
 Today=$(date +%Y%m%d)
-LogDir=/var/log/system
-LogFile=${LogDir}/${Today}_`hostname`.log
-expire_days=7
+LogFile=${Log_Dir}/${Today}_`hostname`.log
+DIMM_Slots=(${DIMM_Slots})
+HDD_Bay_Slots=(${HDD_Bay_Slots})
 
-Interval=10					# Monitoring Interval
+WriteLog() {
+	local log_message=$1
+	local log_priority=$2
+	TIMESTAMP=`date "+%Y-%m-%d %H:%M:%S"`
 
-Temp_major=94 				# CPU upper-non critical
-Temp_critical=95			# CPU upper-critical
+	#check if level exists
+	[[ ${levels[$log_priority]} ]] || return 1
 
-FAN_Default_CNT="4"			# FAN count
-RPM_Lower="1500"			# FAN lower-non critical
+	#check if level is enough
+	(( ${levels[$log_priority]} < ${levels[$Log_Level]} )) && return 2
 
-Mem_Default_CNT="6"			# Memory count
-DIMM_Slots=("DIMM_P0_A0"
-            "DIMM_P0_B0"
-            "DIMM_P0_D0"
-            "DIMM_P1_F1"
-            "DIMM_P1_G0"
-            "DIMM_P1_H0")	# Actual DIMM Slots
+	#log here
+	echo -e "${TIMESTAMP} [${log_priority}] ${log_message}"			>> $LogFile
+}
 
 CPU_Temp(){
 
-	TIMESTAMP=`date "+%Y-%m-%d %H:%M:%S"`
-	
 	CPU_Temp=$(ipmitool sdr type temperature | grep CPU | awk '{print $1,$9}')
 	CPU0_Temp=$(grep CPU0_TEMP <<< $CPU_Temp | awk '{print $2}')
 	CPU1_Temp=$(grep CPU1_TEMP <<< $CPU_Temp | awk '{print $2}')
 
 	# CPU0 Temperature check
 	if [ ${CPU0_Temp} -ge ${Temp_critical} ]; then
-		echo -e "${TIMESTAMP} [CRIT] CPU0 Temp		: ${CPU0_Temp} degree C is over ${Temp_critical}"	>> $LogFile
+		WriteLog "CPU0 Temp	: ${CPU0_Temp} degree C UPPER-CRITICAL" "ERRO"
 	elif [ ${CPU0_Temp} -ge ${Temp_major} ]; then
-		echo -e "${TIMESTAMP} [MAJO] CPU0 Temp		: ${CPU0_Temp} degree C is over ${Temp_major}"		>> $LogFile
+		WriteLog "CPU0 Temp	: ${CPU0_Temp} degree C UPPER-NON-CRITICAL" "WARN"
 	else
-		echo -e "${TIMESTAMP} [INFO] CPU0 Temp		: ${CPU0_Temp} degree C is normal"			>> $LogFile
+		WriteLog "CPU0 Temp	: ${CPU0_Temp} degree C" "INFO"
 	fi
 
 	# CPU1 Temperature check
 	if [ ${CPU1_Temp} -ge ${Temp_critical} ]; then
-		echo -e "${TIMESTAMP} [CRIT] CPU1 Temp		: ${CPU1_Temp} degree C is over ${Temp_critical}"	>> $LogFile
+		WriteLog "CPU1 Temp	: ${CPU1_Temp} degree C UPPER-CRITICAL" "ERRO"
 	elif [ ${CPU1_Temp} -ge ${Temp_major} ]; then
-		echo -e "${TIMESTAMP} [MAJO] CPU1 Temp		: ${CPU1_Temp} degree C is over ${Temp_major}"		>> $LogFile
+		WriteLog "CPU1 Temp	: ${CPU1_Temp} degree C UPPER-NON-CRITICAL" "WARN"
 	else
-		echo -e "${TIMESTAMP} [INFO] CPU1 Temp		: ${CPU1_Temp} degree C is normal"			>> $LogFile
+		WriteLog "CPU1 Temp	: ${CPU1_Temp} degree C" "INFO"
 	fi
 
 }
 
 Mem_Info(){
 
-	TIMESTAMP=`date "+%Y-%m-%d %H:%M:%S"`
-	
 	Mem_Info=$(dmidecode -t memory | grep -E 'Size: [0-9]' -A 3)
 	Mem_Size=($(grep Size <<< $Mem_Info | awk '{print $2}'))
 	Mem_Slots=($(grep Locator <<< $Mem_Info | awk '{print $2}'))
 
 	# Memory count check
 	for ((i=0 ; i<Mem_Default_CNT ; i++))
-    do
+	do
         if [ ${Mem_Slots[i]} == ${DIMM_Slots[i]} ]; then
-		    echo -e "${TIMESTAMP} [INFO] ${Mem_Slots[i]}		: ${Mem_Size[i]} GB"		>> $LogFile
+			WriteLog "${Mem_Slots[i]}	: ${Mem_Size[i]} GB" "INFO"
 		else
-            echo -e "${TIMESTAMP} [ERRO] ${Mem_Slots[i]}		: ERROR"		>> $LogFile
+        	WriteLog "${Mem_Slots[i]}	: NOT INSTALLED" "ERRO"
         fi
 	done
 }
 
 FAN_RPM(){
 	
-	TIMESTAMP=`date "+%Y-%m-%d %H:%M:%S"`
-		
 	FAN_RPM=$(ipmitool sdr type fan | grep RPM | awk '{print $1,$9}')
 	FAN_CNT=$(echo -e "${FAN_RPM}" | wc -l)
 	RPM_list=$(echo -e "${FAN_RPM}" | awk '{print $2}')
 	
-	SYS_RPM=$(grep BPB_FAN_1A <<< ${FAN_RPM} | awk '{print $2}')
-	GPU_RPM=$(grep BPB_FAN_4A <<< ${FAN_RPM} | awk '{print $2}')
-
-	#SYS_RPM=$(grep SYS_RPM1 <<< ${FAN_RPM} | awk '{print $2}')
-	#GPU_RPM=$(grep GPU12_FAN <<< ${FAN_RPM} | awk '{print $2}')
+	SYS_RPM=$(grep ${SYS_FAN} <<< ${FAN_RPM} | awk '{print $2}')
+	GPU_RPM=$(grep ${GPU_FAN} <<< ${FAN_RPM} | awk '{print $2}')
 
 	# FAN count check
 	if [ ${FAN_CNT} -ne ${FAN_Default_CNT} ]; then
-		echo -e "${TIMESTAMP} [CRIT] One of FAN is failure"						>> $LogFile
+		WriteLog "Some FAN IS NOT INSTALLED OR MISSING" "ERRO"
 	else
 		for RPM in ${RPM_list}
 		do
 			if [ ${RPM} -le ${RPM_Lower} ]; then
-				echo -e "${TIMESTAMP} [CRIT] FAN RPM		: ${RPM} RPM is LOW"	>> $LogFile	
+				WriteLog "FAN RPM	: ${RPM} RPM is LOW" "ERRO"
 				return 0
 			fi
 		done
-		
-		echo -e "${TIMESTAMP} [INFO] System FAN RPM	: ${SYS_RPM} RPM is normal"			>> $LogFile
-		echo -e "${TIMESTAMP} [INFO] GPU FAN RPM		: ${GPU_RPM} RPM is normal"		>> $LogFile
+		WriteLog "SYS FAN RPM	: ${SYS_RPM} RPM" "INFO"
+		WriteLog "GPU FAN RPM	: ${GPU_RPM} RPM" "INFO"
 	fi
 	
 }
 
 PSU(){
 	
-	TIMESTAMP=`date "+%Y-%m-%d %H:%M:%S"`
-	last_event=$(ipmitool sel list | grep "Power Supply" | tail -1)
-	last_status=$(awk '{print $16}' <<< ${last_event})
-	last_num=$(awk '{print $1}' <<< ${last_event})
-
-	if [ "$last_status" == "Asserted" ]; then
-		echo -e "${TIMESTAMP} [CRIT] $(awk '{print $11,$12,$13,$14,$16}' <<< ${last_event})"	>> $LogFile
+	PSU_Event=$(ipmitool sel list | grep "Power Supply AC lost")
+	PSU1_status=$(grep ${PSU1} <<< ${PSU_Event} | tail -1)
+	PSU2_status=$(grep ${PSU2} <<< ${PSU_Event} | tail -1)
+	#Last_Status=$(awk '{print $16}' <<< ${Last_Event})
+	
+	if [ "$PSU1_status" == "Asserted" ]; then
+		WriteLog "PSU1		: Power Supply AC lost" "ERRO"
 	else
-		echo -e "${TIMESTAMP} [INFO] Power Supply		: Normal"				>> $LogFile
+		WriteLog "PSU1		: Normal" "INFO"
+	fi
+
+	if [ "$PSU2_status" == "Asserted" ]; then
+		WriteLog "PSU2		: Power Supply AC lost" "ERRO"
+	else
+		WriteLog "PSU2		: Normal" "INFO"
 	fi
 }
 
 RAID(){
 
-	TIMESTAMP=`date "+%Y-%m-%d %H:%M:%S"`
+	RAID_Info=$(/opt/MegaRAID/storcli/storcli64 /c0 show nolog)
+	#RAID_Info=$(cat RAID)
+	VD_List=$(grep -A 8 "VD LIST" <<< ${RAID_Info})
+	OS_RAID=$(grep "0/0" <<< ${VD_List} | awk '{print $3}')
+	Data_RAID=$(grep "1/1" <<< ${VD_List} | awk '{print $3}')
 
-	vd_list=$(/opt/MegaRAID/storcli/storcli64 /c0 show nolog | grep -A 8 "VD LIST")
-	os_raid=$(grep "0/0" <<< ${vd_list} | awk '{print $3}')
-	data_raid=$(grep "1/1" <<< ${vd_list} | awk '{print $3}')
+	PD_List=$(grep -A 10 "PD LIST" <<< ${RAID_Info})
 
-	pd_list=$(/opt/MegaRAID/storcli/storcli64 /c0 show nolog | grep -A 10 "PD LIST")
+	HDD_Bays=($(grep ":[0-9]" <<< ${PD_List} | awk '{print $1}' | awk -F ':' '{print $2}'))
+	HDD_State=($(grep ":[0-9]" <<< ${PD_List} | awk '{print $3}'))
 
-	if [ ${os_raid} == "Optl" ]; then
-		echo -e "${TIMESTAMP} [INFO] OS RAID		: Optimal"		>> $LogFile
-	else 
-		echo -e "${TIMESTAMP} [CRIT] OS RAID 		: NOT Optimal"		>> $LogFile
-		echo -e "=================== RAID Status INFO ==========================="		>> $LogFile
-		echo -e "${vd_list}"							>> $LogFile
-		echo -e "${pd_list}"							>> $LogFile
+	if [ ${OS_RAID} == "Optl" ] && [ ${Data_RAID} == "Optl" ]; then
+		WriteLog "RAID Status	: Optimal" "INFO"
+		return 0
 	fi
 
-	if [ ${data_raid} == "Optl" ]; then
-		echo -e "${TIMESTAMP} [INFO] DATA RAID 		: Optimal"		>> $LogFile
-	else 
-		echo -e "${TIMESTAMP} [CRIT] DATA RAID 		: NOT Optimal"		>> $LogFile
-		echo -e "=================== RAID Status INFO ==========================="		>> $LogFile
-		echo -e "${vd_list}"							>> $LogFile
-		echo -e "${pd_list}"							>> $LogFile
+	if [ ${#HDD_Bays[@]} -eq ${#HDD_Bay_Slots[@]} ]; then
+		for ((i=0 ; i<${#HDD_Bay_Slots[@]} ; i++))
+		do
+			if [ ${HDD_State[i]} == 'Onln' ]; then
+				WriteLog "HDD Bay ${HDD_Bays[i]}	: ${HDD_State[i]}" "INFO"
+			else
+				WriteLog "HDD Bay ${HDD_Bays[i]}	: ${HDD_State[i]}" "ERRO"
+			fi
+		done
+	else
+		Missing_Bay=(`echo ${HDD_Bay_Slots[@]} ${HDD_Bays[@]} | tr ' ' '\n' | sort | uniq -u `)
+		WriteLog "HDD Bay ${Missing_Bay}	: MISSING" "ERRO"
 	fi
-
 }
 
 while true
@@ -163,9 +165,8 @@ do
 
 	if [ "$Today" != $(date +%Y%m%d) ]; then
 		Today=$(date +%Y%m%d)
-		LogFile=${LogDir}/${Today}_`hostname`.log
-		find ${LogDir}/* -type f -mtime +${expire_days} -exec rm -f {} \;
+		LogFile=${Log_Dir}/${Today}_`hostname`.log
+		find ${Log_Dir}/* -type f -mtime +${Log_Days} -exec rm -f {} \;
 	fi
 
 done
-
