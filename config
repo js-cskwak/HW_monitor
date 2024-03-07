@@ -1,27 +1,27 @@
 # Logging values
-Log_Dir="/var/log/system"   # Log Directory
-Log_Level="INFO"            # [INFO]=0 [WARN]=1 [ERRO]=2
-Log_Days=7                  # Log file expire day
+Log_Dir="/var/log/system"	# Log Directory
+Log_Level="INFO"		# [INFO]=0 [WARN]=1 [ERRO]=2
+Log_Days=7			# Log file expire day
 
-Interval=10					# Monitoring Interval
+Interval=10			# Monitoring Interval
 
 # CPU values
-Temp_major=50 				# CPU upper-non critical
-Temp_critical=60			# CPU upper-critical
+Temp_major=50 			# CPU upper-non critical
+Temp_critical=60		# CPU upper-critical
 
 # FAN values
-FAN_Default_CNT="4"			# FAN count
-RPM_Lower="1500"			# FAN lower-non critical (ipmitool sensor)
-SYS_FAN="BPB_FAN_1A"        # SYS FAN Sensor name (ipmitool sdr)
-GPU_FAN="BPB_FAN_4A"        # GPU FAN Sensor name (ipmitool sdr)
+FAN_Default_CNT="4"		# FAN count
+RPM_Lower="1500"		# FAN lower-non critical (ipmitool sensor)
+SYS_FAN="BPB_FAN_1A"		# SYS FAN Sensor name (ipmitool sdr)
+GPU_FAN="BPB_FAN_4A"		# GPU FAN Sensor name (ipmitool sdr)
 
 # Memory values
-Mem_Default_CNT="6"			# Memory count
+Mem_Default_CNT="6"		# Memory count
 DIMM_Slots="DIMM_P0_A0 DIMM_P0_B0 DIMM_P0_D0 DIMM_P1_F0 DIMM_P1_G0 DIMM_P1_H0"	# Actual DIMM Slots
 
 # PSU values
-PSU1="0x9a"                 # PSU code (ipmitool sel list)
-PSU2="0x9b"                 # PSU code (ipmitool sel list)
+PSU1="0x9a"			# PSU code (ipmitool sel list)
+PSU2="0x9b"			# PSU code (ipmitool sel list)
 
 # HDD values
-HDD_Bay_Slots="0 1 2 3"     # HDD Bay slot number
+HDD_Bay_Slots="0 1 2 3"		# HDD Bay slot number
