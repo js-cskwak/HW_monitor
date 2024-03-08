@@ -1,27 +1,37 @@
-# Logging values
+# Logging
 Log_Dir="/var/log/system"	# Log Directory
 Log_Level="INFO"		# [INFO]=0 [WARN]=1 [ERRO]=2
 Log_Days=7			# Log file expire day
 
 Interval=10			# Monitoring Interval
 
-# CPU values
+# CPU
 Temp_major=50 			# CPU upper-non critical
 Temp_critical=60		# CPU upper-critical
 
-# FAN values
+# FAN
 FAN_Default_CNT="4"		# FAN count
 RPM_Lower="1500"		# FAN lower-non critical (ipmitool sensor)
 SYS_FAN="BPB_FAN_1A"		# SYS FAN Sensor name (ipmitool sdr)
 GPU_FAN="BPB_FAN_4A"		# GPU FAN Sensor name (ipmitool sdr)
 
-# Memory values
+# Memory
 Mem_Default_CNT="6"		# Memory count
 DIMM_Slots="DIMM_P0_A0 DIMM_P0_B0 DIMM_P0_D0 DIMM_P1_F0 DIMM_P1_G0 DIMM_P1_H0"	# Actual DIMM Slots
 
-# PSU values
+# NIC
+NIC_CNT=3			# All Ethernet count (Physical NIC + Bond)
+Bond_Dev=bond0			# Bonding Device name
+
+# HDD
+HDD_Bay_Slots="0 1 2 3"		# HDD Bay slot number
+OS_VD="0/0"			# OS RAID VD (/opt/MegaRAID/storcli/storcli64 /c0 /vall show)
+DATA_VD="1/1"			# OS RAID VD (/opt/MegaRAID/storcli/storcli64 /c0 /vall show)
+
+# GPU
+GPU_major=70			# GPU utilization major
+GPU_critical=80			# GPU utilization critical
+
+# PSU
 PSU1="0x9a"			# PSU code (ipmitool sel list)
 PSU2="0x9b"			# PSU code (ipmitool sel list)
-
-# HDD values
-HDD_Bay_Slots="0 1 2 3"		# HDD Bay slot number

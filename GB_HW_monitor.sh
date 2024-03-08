@@ -92,33 +92,35 @@ FAN_RPM(){
 	
 }
 
-PSU(){
+NIC_Info(){
 	
-	PSU_Event=$(ipmitool sel list | grep "Power Supply AC lost")
-	PSU1_status=$(grep ${PSU1} <<< ${PSU_Event} | tail -1)
-	PSU2_status=$(grep ${PSU2} <<< ${PSU_Event} | tail -1)
-	#Last_Status=$(awk '{print $16}' <<< ${Last_Event})
-	
-	if [ "$PSU1_status" == "Asserted" ]; then
-		WriteLog "PSU1		: Power Supply AC lost" "ERRO"
-	else
-		WriteLog "PSU1		: Normal" "INFO"
-	fi
+	IP_Link=$(ip link | grep -E "en[a-z]|bond")
+	NIC_Devs=($(grep "en[a-z]" <<< ${IP_Link} | cut -d ":" -f2))
+	NIC_Status=($(grep "en[a-z]" <<< ${IP_Link} | awk -F ',' '{print $5}' | cut -d '>' -f1))
+	Bond_Status=$(grep "bond0:" <<< ${IP_Link} | awk -F ',' '{print $5}' | cut -d '>' -f1)
 
-	if [ "$PSU2_status" == "Asserted" ]; then
-		WriteLog "PSU2		: Power Supply AC lost" "ERRO"
+	if [ ${Bond_Status} == 'LOWER_UP' ]; then
+		WriteLog "Bondig bond0	: UP" "INFO"
 	else
-		WriteLog "PSU2		: Normal" "INFO"
-	fi
+		WriteLog "Bondig bond0	: DOWN" "ERRO"
+	fi	
+	
+	for ((i=0 ; i<${#NIC_Devs[@]} ; i++))
+	do
+		if [ ${NIC_Status[i]} == 'LOWER_UP' ]; then
+			WriteLog "Eth ${NIC_Devs[i]}	: UP" "INFO"
+		else
+			WriteLog "Eth ${NIC_Devs[i]}	: DOWN" "ERRO"
+		fi
+	done
 }
 
 RAID(){
 
 	RAID_Info=$(/opt/MegaRAID/storcli/storcli64 /c0 show nolog)
-	#RAID_Info=$(cat RAID)
 	VD_List=$(grep -A 8 "VD LIST" <<< ${RAID_Info})
-	OS_RAID=$(grep "0/0" <<< ${VD_List} | awk '{print $3}')
-	Data_RAID=$(grep "1/1" <<< ${VD_List} | awk '{print $3}')
+	OS_RAID=$(grep ${OS_VD} <<< ${VD_List} | awk '{print $3}')
+	Data_RAID=$(grep ${DATA_VD} <<< ${VD_List} | awk '{print $3}')
 
 	PD_List=$(grep -A 10 "PD LIST" <<< ${RAID_Info})
 
@@ -145,6 +147,49 @@ RAID(){
 	fi
 }
 
+GPU_Info(){
+	
+	GPU_Info=$(nvidia-smi --format=csv --query-gpu=name,utilization.gpu,fan.speed,temperature.gpu)
+	#grep NVIDIA <<< ${GPU_Info} | awk -F ',' '{print $1,$2,$3,$4}' | cut -d ' ' -f3,5,8,11
+	#GPU_Info=$(cat /root/HW_monitor/GPU)
+	GPU_Model=($(grep "NVIDIA" <<< ${GPU_Info} | awk -F ',' '{print $1,$2,$3,$4}' | cut -d ' ' -f3))
+	GPU_Usage=($(grep "NVIDIA" <<< ${GPU_Info} | awk -F ',' '{print $1,$2,$3,$4}' | cut -d ' ' -f5))
+	GPU_Fan=($(grep "NVIDIA" <<< ${GPU_Info} | awk -F ',' '{print $1,$2,$3,$4}' | cut -d ' ' -f8))
+	GPU_Temp=($(grep "NVIDIA" <<< ${GPU_Info} | awk -F ',' '{print $1,$2,$3,$4}' | cut -d ' ' -f11))
+		
+	for ((i=0 ; i<${#GPU_Model[@]} ; i++))
+	do
+		if [ ${GPU_Usage[i]} -gt ${GPU_critical} ]; then
+			WriteLog "GPU ${GPU_Model[i]} 	: GPU usage : ${GPU_Usage[i]}%, FAN Speed : ${GPU_Fan[i]}%, Temp : ${GPU_Temp[i]} C" "ERRO"	
+		elif [ ${GPU_Usage[i]} -gt ${GPU_major} ]; then
+			WriteLog "GPU ${GPU_Model[i]} 	: GPU usage : ${GPU_Usage[i]}%, FAN Speed : ${GPU_Fan[i]}%, Temp : ${GPU_Temp[i]} C" "WARN"	
+		else
+			WriteLog "GPU ${GPU_Model[i]} 	: GPU usage : ${GPU_Usage[i]}%, FAN Speed : ${GPU_Fan[i]}%, Temp : ${GPU_Temp[i]} C" "INFO"	
+		fi
+
+	done
+}
+
+PSU(){
+	
+	PSU_Event=$(ipmitool sel list | grep "Power Supply AC lost")
+	PSU1_status=$(grep ${PSU1} <<< ${PSU_Event} | tail -1)
+	PSU2_status=$(grep ${PSU2} <<< ${PSU_Event} | tail -1)
+	#Last_Status=$(awk '{print $16}' <<< ${Last_Event})
+	
+	if [ "$PSU1_status" == "Asserted" ]; then
+		WriteLog "PSU1		: Power Supply AC lost" "ERRO"
+	else
+		WriteLog "PSU1		: Normal" "INFO"
+	fi
+
+	if [ "$PSU2_status" == "Asserted" ]; then
+		WriteLog "PSU2		: Power Supply AC lost" "ERRO"
+	else
+		WriteLog "PSU2		: Normal" "INFO"
+	fi
+}
+
 while true
 do
 
@@ -157,11 +202,18 @@ do
 	FAN_RPM
 	sleep $Interval
 
-	PSU
+	NIC_Info
 	sleep $Interval
 
 	RAID
 	sleep $Interval
+
+	GPU_Info
+	sleep $Interval
+
+	PSU
+	sleep $Interval
+
 
 	if [ "$Today" != $(date +%Y%m%d) ]; then
 		Today=$(date +%Y%m%d)

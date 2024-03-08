@@ -3,6 +3,7 @@ Gigabyte 제품 기준으로 작성 됨.
 - CPU 온도
 - Memory 장착 상태
 - FAN RPM 
+- GPU 상태
 - PSU 상태
 - RAID 상태 검출
 
