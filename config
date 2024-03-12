@@ -10,27 +10,23 @@ Temp_major=50 			# CPU upper-non critical
 Temp_critical=60		# CPU upper-critical
 
 # FAN
-FAN_Default_CNT="4"		# FAN count
 RPM_Lower="1500"		# FAN lower-non critical (ipmitool sensor)
-SYS_FAN="BPB_FAN_1A"		# SYS FAN Sensor name (ipmitool sdr)
-GPU_FAN="BPB_FAN_4A"		# GPU FAN Sensor name (ipmitool sdr)
+FAN_LIST="BPB_FAN_1A BPB_FAN_2A BPB_FAN_3A BPB_FAN_4A"  # FAN Sensor name (ipmitool sdr type fan)
 
 # Memory
-Mem_Default_CNT="6"		# Memory count
 DIMM_Slots="DIMM_P0_A0 DIMM_P0_B0 DIMM_P0_D0 DIMM_P1_F0 DIMM_P1_G0 DIMM_P1_H0"	# Actual DIMM Slots
 
 # NIC
-NIC_CNT=3			# All Ethernet count (Physical NIC + Bond)
-Bond_Dev=bond0			# Bonding Device name
+Bond_Dev=bond0          # Bonding Device name
 
 # HDD
 HDD_Bay_Slots="0 1 2 3"		# HDD Bay slot number
-OS_VD="0/0"			# OS RAID VD (/opt/MegaRAID/storcli/storcli64 /c0 /vall show)
-DATA_VD="1/1"			# OS RAID VD (/opt/MegaRAID/storcli/storcli64 /c0 /vall show)
+OS_VD="0/0"             # OS RAID VD (/opt/MegaRAID/storcli/storcli64 /c0 /vall show)
+DATA_VD="1/1"           # OS RAID VD (/opt/MegaRAID/storcli/storcli64 /c0 /vall show)
 
 # GPU
-GPU_major=70			# GPU utilization major
-GPU_critical=80			# GPU utilization critical
+GPU_major=70            # GPU utilization major
+GPU_critical=80         # GPU utilization critical
 
 # PSU
 PSU1="0x9a"			# PSU code (ipmitool sel list)
