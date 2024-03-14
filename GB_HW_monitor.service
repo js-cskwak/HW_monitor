@@ -1,5 +1,3 @@
-#!/bin/bash
-
 [Unit]
 Description=GB_HW_Monitor
 
